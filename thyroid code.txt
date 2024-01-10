@@ -1,0 +1,106 @@
+import warnings
+warnings.filterwarnings(&#39;ignore&#39;)
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+#matplotlib inline
+from sklearn.model_selection import train_test_split
+from sklearn import model_selection
+data=pd.read_csv(&#39;DataBase.csv&#39;)
+data.head()
+data.shape
+data.columns
+data.describe()
+data.info()
+df= data.loc[data[&#39;Visit&#39;]==1]
+df = df.reset_index(drop=True)
+df.head()
+from sklearn.preprocessing import LabelEncoder
+lab=LabelEncoder()
+df[&#39;M/F&#39;]=lab.fit_transform(df[&#39;M/F&#39;])
+df[&#39;Group&#39;]=lab.fit_transform(df[&#39;Group&#39;])
+df[&#39;Hand&#39;]=lab.fit_transform(df[&#39;Hand&#39;])
+df.head()
+df1=df.drop(df[[&#39;Subject ID&#39;,&#39;MRI ID&#39;,&#39;Visit&#39;]],axis=1)
+df1.head()
+df1.isnull().sum()
+df2= df1.dropna()
+df2.isnull().sum()
+df2.head()
+sns.countplot(x=&#39;Group&#39;,data=df2)
+def bar_chart(feature):
+    Demented =df[df[&#39;Group&#39;]==1][feature].value_counts()
+    Nondemented = df[df[&#39;Group&#39;]==0][feature].value_counts()
+    df_bar = pd.DataFrame([Demented,Nondemented])
+    df_bar.index = [&#39;Demented&#39;,&#39;Nondemented&#39;]
+    df_bar.plot(kind=&#39;bar&#39;,stacked=True,figsize=(8,5))
+    bar_chart(&#39;M/F&#39;)
+plt.xlabel(&#39;Group&#39;)
+plt.ylabel(&#39;Number of patients&#39;)
+plt.legend()
+plt.title(&#39;Gender and Demented rate&#39;)
+facet=sns.FacetGrid(df,hue=&#39;Group&#39;, aspect=3)
+facet.map(sns.kdeplot,&#39;MMSE&#39;,shade=True)
+facet.set(xlim=(0,df[&#39;MMSE&#39;].max()))
+facet.add_legend()
+plt.xlim(15,30)
+facet=sns.FacetGrid(df,hue=&#39;Group&#39;, aspect=3)
+facet.map(sns.kdeplot,&#39;ASF&#39;,shade=True)
+facet.set(xlim=(0,df[&#39;ASF&#39;].max()))
+facet.add_legend()
+plt.xlim(0.5,2)
+facet=sns.FacetGrid(df,hue=&#39;Group&#39;, aspect=3)
+facet.map(sns.kdeplot,&#39;nWBV&#39;,shade=True)
+facet.set(xlim=(0,df[&#39;nWBV&#39;].max()))
+facet.add_legend()
+plt.xlim(0.6,0.9)
+
+facet=sns.FacetGrid(df,hue=&#39;Group&#39;, aspect=3)
+facet.map(sns.kdeplot,&#39;eTIV&#39;,shade=True)
+facet.set(xlim=(0,df[&#39;eTIV&#39;].max()))
+facet.add_legend()
+plt.xlim(900,2100)
+facet=sns.FacetGrid(df,hue=&quot;Group&quot;, aspect=3)
+facet.map(sns.kdeplot,&#39;EDUC&#39;,shade=True)
+facet.set(xlim=(df[&#39;EDUC&#39;].min(),df[&#39;EDUC&#39;].max()))
+facet.add_legend()
+plt.ylim(0,0.16)
+x=df2.iloc[:,df2.columns!=&#39;Group&#39;]
+y=df2.iloc[:,df2.columns==&#39;Group&#39;]
+x.shape
+x.head()
+y.head()
+xtrain,xtest,ytrain,ytest=train_test_split(x,y,test_size=0.3)
+xtrain.head()
+ytrain.head()
+from sklearn.svm import SVC
+model1=SVC()
+model1.fit(xtrain,ytrain)
+predic1=model1.predict(xtest)
+from sklearn.metrics import accuracy_score
+acc1=accuracy_score(predic1,ytest)
+acc1
+from sklearn.metrics import classification_report
+def apply_classifier(model1,xtrain,xtest,ytrain,ytest):
+    model1.fit(xtrain,ytrain)
+    predictions=model1.predict(xtest)
+    print(&quot;\n classification report : \n {}&quot;,format(classification_report(ytest,predictions)))
+apply_classifier(model1,xtrain,xtest,ytrain,ytest)
+model_linear_kernal = SVC(kernel=&#39;linear&#39;)
+model_linear_kernal.fit(xtrain, ytrain)
+apply_classifier(model_linear_kernal,xtrain,xtest,ytrain,ytest)
+results = model_selection.cross_val_score(model_linear_kernal, x, y)
+print(&quot;MeanSqareError(MSE): %.3f (%.3f)&quot; % (results.mean(), results.std()))
+from sklearn.tree import DecisionTreeClassifier
+decision_tree=DecisionTreeClassifier(random_state= 42)
+apply_classifier(decision_tree,xtrain,xtest,ytrain,ytest)
+from sklearn.ensemble import RandomForestClassifier
+random_forest=RandomForestClassifier(random_state=42)
+apply_classifier(random_forest,xtrain,xtest,ytrain,ytest)
+
+from sklearn.naive_bayes import GaussianNB
+model = GaussianNB()
+model.fit(xtrain,ytrain)
+model.score(xtest,ytest)
+apply_classifier(model,xtrain,xtest,ytrain,ytest)
